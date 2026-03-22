@@ -31,3 +31,4 @@
 /home/soer916b/expense-tracker-proj/ExpenseTracker.Api/obj/Debug/net10.0/ExpenseTracker.Api.pdb
 /home/soer916b/expense-tracker-proj/ExpenseTracker.Api/obj/Debug/net10.0/ExpenseTracker.Api.genruntimeconfig.cache
 /home/soer916b/expense-tracker-proj/ExpenseTracker.Api/obj/Debug/net10.0/ref/ExpenseTracker.Api.dll
+/home/soer916b/expense-tracker-proj/ExpenseTracker.Api/obj/Debug/net10.0/ExpenseTracker.Api.sourcelink.json
