@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -43,13 +41,25 @@ List<Expense> expenses =
     }
 ];
 
+
+/**************************************/
+
+
 app.MapGet("/", () => "Welcome to the Expense Tracker!");
+
+
+/**************************************/
+
 
 app.MapGet("/expenses", () =>
 {
-    return expenses;
+    return Results.Ok(expenses);
 })
 .WithName("GetExpenses");
+
+
+/**************************************/
+
 
 app.MapGet("/expenses/{id}", (int id) =>
 {
@@ -63,6 +73,10 @@ app.MapGet("/expenses/{id}", (int id) =>
     return Results.NotFound();
 })
 .WithName("GetExpenseById");
+
+
+/**************************************/
+
 
 app.MapPost("/expenses", (Expense expense) =>
 {   
@@ -79,6 +93,10 @@ app.MapPost("/expenses", (Expense expense) =>
 })
 .WithName("CreateExpense");
 
+
+/**************************************/
+
+
 app.MapDelete("/expenses/{id}", (int id) =>
 {   
     Expense? expenseToDelete = null;
@@ -87,6 +105,7 @@ app.MapDelete("/expenses/{id}", (int id) =>
         if (expense.Id == id)
         {
             expenseToDelete = expense;
+            break;
         }
     }
     if (expenseToDelete == null)
@@ -98,6 +117,10 @@ app.MapDelete("/expenses/{id}", (int id) =>
 })
 .WithName("DeleteExpense");
 
+
+/**************************************/
+
+
 app.MapPut("/expenses/{id}", (int id, Expense expense) =>
 {
     Expense? expenseToUpdate = null;
@@ -106,6 +129,7 @@ app.MapPut("/expenses/{id}", (int id, Expense expense) =>
         if (existing_expense.Id == id)
         {
             expenseToUpdate = existing_expense;
+            break;
         }
     }
     if (expenseToUpdate == null)
@@ -119,5 +143,9 @@ app.MapPut("/expenses/{id}", (int id, Expense expense) =>
     return Results.Ok(expenseToUpdate);
 })
 .WithName("UpdateExpense");
+
+
+/**************************************/
+
 
 app.Run();
