@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,17 +31,26 @@ app.UseHttpsRedirection();
 
 /**************************************/
 
-List<Expense> expenses = 
-[
-    new Expense 
-    { 
-    Id = 1,
-    Amount = 50,
-    Category = "Indkøb",
-    Description = "Aftensmad i Netto",
-    Date = new DateOnly(2026, 3, 22)
+static IResult? ValidateExpense (Expense expense)
+{
+    if (expense.Amount <= 0)
+    {
+        return Results.BadRequest("Amount must be greater than 0.");
     }
-];
+    if (string.IsNullOrWhiteSpace(expense.Category))
+    {
+        return Results.BadRequest("Category must not be blank.");
+    }
+    if (expense.Description.Length > 200)
+    {
+        return Results.BadRequest("Description must not be longer than 200 characters.");
+    }
+    if (expense.Date == default)
+    {
+        return Results.BadRequest("Date must be set");
+    }
+    return null;
+}
 
 /**************************************/
 
@@ -74,6 +82,12 @@ app.MapGet("/expenses/{id}", async (ExpenseContext db, int id) =>
 
 app.MapPost("/expenses", async (ExpenseContext db, Expense expense) =>
 {
+    var validationError = ValidateExpense(expense);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
     await db.Expenses.AddAsync(expense);
     await db.SaveChangesAsync();
 
@@ -100,6 +114,12 @@ app.MapDelete("/expenses/{id}", async (ExpenseContext db, int id) =>
 
 app.MapPut("/expenses/{id}", async (ExpenseContext db, int id, Expense expense) =>
 {
+    var validationError = ValidateExpense(expense);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
     Expense? expenseToUpdate = await db.Expenses.FindAsync(id);
     if (expenseToUpdate == null)
     {
