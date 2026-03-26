@@ -2,11 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-/**************************************/
-
-// Add services to the container.
 builder.Services.AddOpenApi();
 
+// DB setup
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException("Connection string"
@@ -15,11 +13,8 @@ var connectionString =
 builder.Services.AddDbContext<ExpenseContext>(options =>
     options.UseSqlite(connectionString));
 
-/**************************************/
 
 var app = builder.Build();
-
-/**************************************/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -27,9 +22,128 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
-/**************************************/
+
+// Root endpoint
+
+app.MapGet("/", () => "Welcome to the Expense Tracker!");
+
+
+// Expense endpoints
+
+app.MapGet("/expenses", async (ExpenseContext db) =>
+{
+    List <Expense> result = await db.Expenses.ToListAsync();
+    
+    return Results.Ok(result);
+})
+.WithName("GetExpenses");
+
+app.MapGet("/expenses/{id}", async (ExpenseContext db, int id) =>
+{
+    Expense? expense = await db.Expenses.FindAsync(id);
+
+    if (expense == null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(expense);
+})
+.WithName("GetExpenseById");
+
+app.MapPost("/expenses", async (ExpenseContext db, Expense expense) =>
+{
+    var validationError = ValidateExpense(expense);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
+    await db.Expenses.AddAsync(expense);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/expenses/{expense.Id}", expense);
+})
+.WithName("CreateExpense");
+
+app.MapDelete("/expenses/{id}", async (ExpenseContext db, int id) =>
+{
+    Expense? expense = await db.Expenses.FindAsync(id);
+
+    if (expense == null)
+    {
+        return Results.NotFound("Expense not found.");
+    }
+
+    db.Expenses.Remove(expense);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(expense);
+})
+.WithName("DeleteExpense");
+
+app.MapPut("/expenses/{id}", async (ExpenseContext db, int id, Expense expense) =>
+{
+    Expense? expenseToUpdate = await db.Expenses.FindAsync(id);
+    if (expenseToUpdate == null)
+    {
+        return Results.NotFound("Expense not found.");
+    }
+
+    var validationError = ValidateExpense(expense);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
+    expenseToUpdate.Amount = expense.Amount;
+    expenseToUpdate.Category = expense.Category;
+    expenseToUpdate.Description = expense.Description;
+    expenseToUpdate.Date = expense.Date;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(expenseToUpdate);
+})
+.WithName("UpdateExpense");
+
+
+// Summary endpoint
+
+app.MapGet("/expenses/summary", async (ExpenseContext db, int year, int month) =>
+{
+    var validationError = ValidateSummaryInput(year, month);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
+    List<Expense> summaryExpenses = await db.Expenses.Where(
+        expense => expense.Date.Year == year && expense.Date.Month == month).ToListAsync();
+
+    int countMonth = summaryExpenses.Count;
+
+    decimal amountMonth = 0;
+    foreach (Expense expense in summaryExpenses)
+    {
+        amountMonth += expense.Amount;
+    }
+
+    var anonSummary = new { Year = year, 
+                            Month = month, 
+                            ExpenseCount = countMonth, 
+                            TotalAmount = amountMonth };
+
+    return Results.Ok(anonSummary);
+})
+.WithName("GetSummaryYearMonth");
+
+
+app.Run();
+
+
+// Auxiliary functions:
 
 static IResult? ValidateExpense (Expense expense)
 {
@@ -52,90 +166,6 @@ static IResult? ValidateExpense (Expense expense)
     return null;
 }
 
-/**************************************/
-
-app.MapGet("/", () => "Welcome to the Expense Tracker!");
-
-/**************************************/
-
-app.MapGet("/expenses", async (ExpenseContext db) =>
-{
-    List <Expense> result = await db.Expenses.ToListAsync();
-    return Results.Ok(result);
-})
-.WithName("GetExpenses");
-
-/**************************************/
-
-app.MapGet("/expenses/{id}", async (ExpenseContext db, int id) =>
-{
-    Expense? expense = await db.Expenses.FindAsync(id);
-    if (expense == null)
-    {
-        return Results.NotFound();
-    }
-    return Results.Ok(expense);
-})
-.WithName("GetExpenseById");
-
-/**************************************/
-
-app.MapPost("/expenses", async (ExpenseContext db, Expense expense) =>
-{
-    var validationError = ValidateExpense(expense);
-    if (validationError != null)
-    {
-        return validationError;
-    }
-
-    await db.Expenses.AddAsync(expense);
-    await db.SaveChangesAsync();
-
-    return Results.Created($"/expenses/{expense.Id}", expense);
-})
-.WithName("CreateExpense");
-
-/**************************************/
-
-app.MapDelete("/expenses/{id}", async (ExpenseContext db, int id) =>
-{
-    Expense? expense = await db.Expenses.FindAsync(id);
-    if (expense == null)
-    {
-        return Results.NotFound("Expense not found.");
-    }
-    db.Expenses.Remove(expense);
-    await db.SaveChangesAsync();
-    return Results.Ok(expense);
-})
-.WithName("DeleteExpense");
-
-/**************************************/
-
-app.MapPut("/expenses/{id}", async (ExpenseContext db, int id, Expense expense) =>
-{
-    var validationError = ValidateExpense(expense);
-    if (validationError != null)
-    {
-        return validationError;
-    }
-
-    Expense? expenseToUpdate = await db.Expenses.FindAsync(id);
-    if (expenseToUpdate == null)
-    {
-        return Results.NotFound("Expense not found.");
-    }
-    expenseToUpdate.Amount = expense.Amount;
-    expenseToUpdate.Category = expense.Category;
-    expenseToUpdate.Description = expense.Description;
-    expenseToUpdate.Date = expense.Date;
-    await db.SaveChangesAsync();
-    return Results.Ok(expenseToUpdate);
-})
-.WithName("UpdateExpense");
-
-/**************************************/
-
 static IResult? ValidateSummaryInput (int year, int month)
 {
     if (year <= 0)
@@ -148,30 +178,3 @@ static IResult? ValidateSummaryInput (int year, int month)
     }
     return null;
 }
-
-/**************************************/
-
-app.MapGet("/expenses/summary", async (ExpenseContext db, int year, int month) =>
-{
-    var validationError = ValidateSummaryInput(year, month);
-    if (validationError != null)
-    {
-        return validationError;
-    }
-
-    List<Expense> summaryExpenses = await db.Expenses.Where(expense => expense.Date.Year == year && expense.Date.Month == month).ToListAsync();
-    int countMonth = summaryExpenses.Count;
-    decimal amountMonth = 0;
-    foreach (Expense expense in summaryExpenses)
-    {
-        amountMonth += expense.Amount;
-    }
-    var anonSummary = new { Year = year, 
-                            Month = month, 
-                            ExpenseCount = countMonth, 
-                            TotalAmount = amountMonth };
-    return Results.Ok(anonSummary);
-})
-.WithName("GetSummaryYearMonth");
-
-app.Run();
