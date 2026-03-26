@@ -1,8 +1,8 @@
 # Expense Tracker API V1
 
-A small learning project built with C#, ASP.NET Core Minimal API, EF Core, and SQLite.
+A small learning project built with C#, ASP.NET Core Minimal API, EF Core and SQLite.
 
-The project implements a simple REST-style API for tracking expenses, with CRUD functionality, input validation, and a monthly summary endpoint.  
+The project implements a simple REST-style API for tracking expenses, with CRUD functionality, input validation and a monthly summary endpoint.  
 
 The purpose of the project was to practice:
 - C#
@@ -12,7 +12,7 @@ The purpose of the project was to practice:
 - input validation
 - basic API design
 
-The project is intentionally kept small and focused as a version 1 learning project.
+The project is kept small and focused as a V1 learning project.
 
 ## Features
 

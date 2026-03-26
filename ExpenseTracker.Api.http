@@ -6,6 +6,17 @@ Accept: application/json
 
 ###
 
+### Get expenses by category [Beer]:
+GET {{host}}/expenses?category=Beer
+Accept: application/json
+
+### Blank category:
+GET {{host}}/expenses?category=
+Accept: application/json
+
+GET {{host}}/expenses?category=
+Accept: application/json
+
 ### Get single expense by id
 GET {{host}}/expenses/1
 Accept: application/json

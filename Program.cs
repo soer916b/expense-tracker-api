@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,19 +25,41 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
+ImmutableArray<string> permittedCategories = [
+    "Groceries",
+    "Food",
+    "Transport",
+    "Rent",
+    "Bills",
+    "Other"
+];
 
 // Root endpoint
 
 app.MapGet("/", () => "Welcome to the Expense Tracker!");
 
-
 // Expense endpoints
 
-app.MapGet("/expenses", async (ExpenseContext db) =>
+app.MapGet("/expenses", async (ExpenseContext db, string? category) =>
 {
-    List <Expense> result = await db.Expenses.ToListAsync();
+    if (category == null)
+    {
+        List<Expense> expenses = await db.Expenses.ToListAsync();
+        return Results.Ok(expenses);
+    }
+    if (string.IsNullOrWhiteSpace(category))
+    {
+        return Results.BadRequest("Category must not be blank.");
+    }
+    if (!permittedCategories.Contains(category))
+    {
+        return Results.BadRequest($"Category must be set to one of the following: {string.Join(", ", permittedCategories)}");
+    }
     
-    return Results.Ok(result);
+    List<Expense> filteredExpenses = await db.Expenses.Where(
+        expense => expense.Category == category).ToListAsync();
+
+    return Results.Ok(filteredExpenses);
 })
 .WithName("GetExpenses");
 
@@ -130,12 +153,12 @@ app.MapGet("/expenses/summary", async (ExpenseContext db, int year, int month) =
         amountMonth += expense.Amount;
     }
 
-    var anonSummary = new { Year = year, 
+    var summary = new { Year = year, 
                             Month = month, 
                             ExpenseCount = countMonth, 
                             TotalAmount = amountMonth };
 
-    return Results.Ok(anonSummary);
+    return Results.Ok(summary);
 })
 .WithName("GetSummaryYearMonth");
 
@@ -145,7 +168,7 @@ app.Run();
 
 // Auxiliary functions:
 
-static IResult? ValidateExpense (Expense expense)
+IResult? ValidateExpense (Expense expense)
 {
     if (expense.Amount <= 0)
     {
@@ -155,13 +178,17 @@ static IResult? ValidateExpense (Expense expense)
     {
         return Results.BadRequest("Category must not be blank.");
     }
+    if (!permittedCategories.Contains(expense.Category))
+    {
+        return Results.BadRequest($"Category must be set to one of the following: {string.Join(", ", permittedCategories)}");    
+    }
     if (expense.Description.Length > 200)
     {
         return Results.BadRequest("Description must not be longer than 200 characters.");
     }
     if (expense.Date == default)
     {
-        return Results.BadRequest("Date must be set");
+        return Results.BadRequest("Date must be set.");
     }
     return null;
 }
@@ -174,7 +201,7 @@ static IResult? ValidateSummaryInput (int year, int month)
     }
     if (month < 1 || month > 12)
     {
-        return Results.BadRequest("Month must be a valid integer from 1 to 12");
+        return Results.BadRequest("Month must be a valid integer from 1 to 12.");
     }
     return null;
 }
