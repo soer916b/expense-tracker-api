@@ -1,35 +1,135 @@
 @host = http://localhost:5290
 
+### Get all expenses
 GET {{host}}/expenses
 Accept: application/json
 
 ###
 
-DELETE {{host}}/expenses/4
-
-###
-
-GET {{host}}/expenses
+### Get single expense by id
+GET {{host}}/expenses/1
 Accept: application/json
 
 ###
 
-PUT {{host}}/expenses/5
+### Create valid expense 1
+POST {{host}}/expenses
 Content-Type: application/json
 
 {
-  "amount": 1,
-  "category": "Netto",
-  "description": "LALALA",
-  "date": "0001-01-02"
+  "amount": 50.00,
+  "category": "Food",
+  "description": "Lunch",
+  "date": "2026-03-10"
 }
 
 ###
 
-GET {{host}}/expenses/1
+### Create valid expense 2
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 120.00,
+  "category": "Transport",
+  "description": "Train card",
+  "date": "2026-03-15"
+}
 
 ###
 
+### Create valid expense 3 (different month)
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 300.00,
+  "category": "Rent",
+  "description": "April rent",
+  "date": "2026-04-01"
+}
+
+###
+
+### Create invalid expense: amount must be greater than 0
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 0,
+  "category": "Food",
+  "description": "Invalid amount",
+  "date": "2026-03-12"
+}
+
+###
+
+### Create invalid expense: category must not be blank
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 25.00,
+  "category": "",
+  "description": "Missing category",
+  "date": "2026-03-12"
+}
+
+###
+
+### Create invalid expense: description too long
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 25.00,
+  "category": "Food",
+  "description": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "date": "2026-03-12"
+}
+
+###
+
+### Create invalid expense: date must be set (default DateOnly)
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 25.00,
+  "category": "Food",
+  "description": "Default date",
+  "date": "0001-01-01"
+}
+
+###
+
+### Update existing expense with valid data
+PUT {{host}}/expenses/1
+Content-Type: application/json
+
+{
+  "amount": 75.00,
+  "category": "Groceries",
+  "description": "Updated expense",
+  "date": "2026-03-20"
+}
+
+###
+
+### Update existing expense with invalid amount
+PUT {{host}}/expenses/1
+Content-Type: application/json
+
+{
+  "amount": -5.00,
+  "category": "Groceries",
+  "description": "Invalid update",
+  "date": "2026-03-20"
+}
+
+###
+
+### Update non-existing expense
 PUT {{host}}/expenses/999
 Content-Type: application/json
 
@@ -42,13 +142,47 @@ Content-Type: application/json
 
 ###
 
-POST {{host}}/expenses
-Content-Type: application/json
+### Delete expense by id
+DELETE {{host}}/expenses/4
 
-{
-  "id": 4,
-  "amount": 70,
-  "category": "Beer",
-  "description": "Lunch",
-  "date": "2026-03-23"
-}
+###
+
+### Get all expenses after delete
+GET {{host}}/expenses
+Accept: application/json
+
+###
+
+### Get monthly summary for March 2026
+GET {{host}}/expenses/summary?year=2026&month=3
+Accept: application/json
+
+###
+
+### Get monthly summary for April 2026
+GET {{host}}/expenses/summary?year=2026&month=4
+Accept: application/json
+
+###
+
+### Get monthly summary for month with no expenses
+GET {{host}}/expenses/summary?year=2026&month=5
+Accept: application/json
+
+###
+
+### Invalid summary input: negative year
+GET {{host}}/expenses/summary?year=-1&month=3
+Accept: application/json
+
+###
+
+### Invalid summary input: month = 0
+GET {{host}}/expenses/summary?year=2026&month=0
+Accept: application/json
+
+###
+
+### Invalid summary input: month = 13
+GET {{host}}/expenses/summary?year=2026&month=13
+Accept: application/json

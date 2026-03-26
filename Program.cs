@@ -102,7 +102,7 @@ app.MapDelete("/expenses/{id}", async (ExpenseContext db, int id) =>
     Expense? expense = await db.Expenses.FindAsync(id);
     if (expense == null)
     {
-        return Results.NotFound();
+        return Results.NotFound("Expense not found.");
     }
     db.Expenses.Remove(expense);
     await db.SaveChangesAsync();
@@ -123,7 +123,7 @@ app.MapPut("/expenses/{id}", async (ExpenseContext db, int id, Expense expense) 
     Expense? expenseToUpdate = await db.Expenses.FindAsync(id);
     if (expenseToUpdate == null)
     {
-        return Results.NotFound();
+        return Results.NotFound("Expense not found.");
     }
     expenseToUpdate.Amount = expense.Amount;
     expenseToUpdate.Category = expense.Category;
@@ -135,5 +135,43 @@ app.MapPut("/expenses/{id}", async (ExpenseContext db, int id, Expense expense) 
 .WithName("UpdateExpense");
 
 /**************************************/
+
+static IResult? ValidateSummaryInput (int year, int month)
+{
+    if (year <= 0)
+    {
+        return Results.BadRequest("Year must be a positive integer.");
+    }
+    if (month < 1 || month > 12)
+    {
+        return Results.BadRequest("Month must be a valid integer from 1 to 12");
+    }
+    return null;
+}
+
+/**************************************/
+
+app.MapGet("/expenses/summary", async (ExpenseContext db, int year, int month) =>
+{
+    var validationError = ValidateSummaryInput(year, month);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
+    List<Expense> summaryExpenses = await db.Expenses.Where(expense => expense.Date.Year == year && expense.Date.Month == month).ToListAsync();
+    int countMonth = summaryExpenses.Count;
+    decimal amountMonth = 0;
+    foreach (Expense expense in summaryExpenses)
+    {
+        amountMonth += expense.Amount;
+    }
+    var anonSummary = new { Year = year, 
+                            Month = month, 
+                            ExpenseCount = countMonth, 
+                            TotalAmount = amountMonth };
+    return Results.Ok(anonSummary);
+})
+.WithName("GetSummaryYearMonth");
 
 app.Run();
