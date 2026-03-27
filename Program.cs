@@ -38,15 +38,10 @@ ImmutableArray<string> permittedCategories = [
 
 app.MapGet("/", () => "Welcome to the Expense Tracker!");
 
-// Expense endpoints
+// GET /expenses auxillary functions:
 
-app.MapGet("/expenses", async (ExpenseContext db, 
-                                string? category, DateOnly? startDate, DateOnly? endDate, 
-                                string? sortBy, string? sortOrder) =>
+IResult? ValidateExpenseQuery (string? category, DateOnly? startDate, DateOnly? endDate, string? sortBy, string? sortOrder)
 {
-    var query = db.Expenses.AsQueryable();
-
-    // Validating input:
     if (category != null && string.IsNullOrWhiteSpace(category))
     {
         return Results.BadRequest("Category must not be blank.");
@@ -71,8 +66,11 @@ app.MapGet("/expenses", async (ExpenseContext db,
     {
         return Results.BadRequest("sortOrder must be either [asc] or [desc]");
     }
+    return null;
+}
 
-    // Filtering:
+IQueryable<Expense> ApplyExpenseFilters (IQueryable<Expense> query, string? category, DateOnly? startDate, DateOnly? endDate) 
+{
     if (category != null)
     {
         query = query.Where(expense => expense.Category == category);
@@ -85,8 +83,11 @@ app.MapGet("/expenses", async (ExpenseContext db,
     {
         query = query.Where(expense => expense.Date <= endDate);
     }
+    return query;
+}
 
-    // Sorting:
+IQueryable<Expense> ApplyExpenseSorting (IQueryable<Expense> query, string? sortBy, string? sortOrder)
+{
     if (sortBy == "date")
     {
         if (sortOrder == "desc") 
@@ -109,6 +110,26 @@ app.MapGet("/expenses", async (ExpenseContext db,
             query = query.OrderBy(expense => expense.Amount);
         }   
     }
+    return query;
+}
+
+// endpoints
+
+app.MapGet("/expenses", async (ExpenseContext db, 
+                                string? category, DateOnly? startDate, DateOnly? endDate, 
+                                string? sortBy, string? sortOrder) =>
+{
+    var validationError = ValidateExpenseQuery(category, startDate, endDate, sortBy, sortOrder);
+    if (validationError != null)
+    {
+        return validationError;
+    }
+
+    var query = db.Expenses.AsQueryable();
+
+    query = ApplyExpenseFilters(query, category, startDate, endDate);
+    query = ApplyExpenseSorting(query, sortBy, sortOrder);
+
     List<Expense> expenses = await query.ToListAsync();
 
     return Results.Ok(expenses);
@@ -214,9 +235,7 @@ app.MapGet("/expenses/summary", async (ExpenseContext db, int year, int month) =
 })
 .WithName("GetSummaryYearMonth");
 
-
 app.Run();
-
 
 // Auxiliary functions:
 
