@@ -1,36 +1,58 @@
 @host = http://localhost:5290
 
+### Root endpoint
+GET {{host}}/
+Accept: application/json
+
+###
+
 ### Get all expenses
 GET {{host}}/expenses
 Accept: application/json
 
 ###
 
-### Get expenses by category [Beer]:
-GET {{host}}/expenses?category=Beer
-Accept: application/json
-
-### Blank category:
-GET {{host}}/expenses?category=
-Accept: application/json
-
-GET {{host}}/expenses?category=
-Accept: application/json
-
-### Get single expense by id
-GET {{host}}/expenses?sortBy=amount&sortOrder=desc
-Accept: application/json
-
-### testing sorting:
-
-
-### Get expenses tests:
-GET {{host}}/expenses
+### Get a single expense by id
+GET {{host}}/expenses/1
 Accept: application/json
 
 ###
+
+### Filter by category
+GET {{host}}/expenses?category=Food
+Accept: application/json
+
+###
+
+### Filter by date interval
 GET {{host}}/expenses?startDate=2026-03-01&endDate=2026-03-31
 Accept: application/json
+
+###
+
+### Filter by category and sort by amount ascending
+GET {{host}}/expenses?category=Food&sortBy=amount
+Accept: application/json
+
+###
+
+### Filter by category and sort by amount descending
+GET {{host}}/expenses?category=Food&sortBy=amount&sortOrder=desc
+Accept: application/json
+
+###
+
+### Filter by date interval and sort by date descending
+GET {{host}}/expenses?startDate=2026-03-01&endDate=2026-03-31&sortBy=date&sortOrder=desc
+Accept: application/json
+
+###
+
+### Filter by category and date interval, then sort by amount descending
+GET {{host}}/expenses?category=Groceries&startDate=2026-03-01&endDate=2026-03-31&sortBy=amount&sortOrder=desc
+Accept: application/json
+
+###
 
 ### Create valid expense 1
 POST {{host}}/expenses
@@ -97,6 +119,19 @@ Content-Type: application/json
 
 ###
 
+### Create invalid expense: category must be one of the permitted values
+POST {{host}}/expenses
+Content-Type: application/json
+
+{
+  "amount": 25.00,
+  "category": "Beer",
+  "description": "Unsupported category",
+  "date": "2026-03-12"
+}
+
+###
+
 ### Create invalid expense: description too long
 POST {{host}}/expenses
 Content-Type: application/json
@@ -110,7 +145,7 @@ Content-Type: application/json
 
 ###
 
-### Create invalid expense: date must be set (default DateOnly)
+### Create invalid expense: date must be set
 POST {{host}}/expenses
 Content-Type: application/json
 
@@ -155,7 +190,7 @@ Content-Type: application/json
 
 {
   "amount": 100.00,
-  "category": "Test",
+  "category": "Other",
   "description": "Should not exist",
   "date": "2026-03-23"
 }
@@ -163,7 +198,7 @@ Content-Type: application/json
 ###
 
 ### Delete expense by id
-DELETE {{host}}/expenses/4
+DELETE {{host}}/expenses/1
 
 ###
 
@@ -191,6 +226,42 @@ Accept: application/json
 
 ###
 
+### Invalid query: category must not be blank
+GET {{host}}/expenses?category=
+Accept: application/json
+
+###
+
+### Invalid query: category must be permitted
+GET {{host}}/expenses?category=Beer
+Accept: application/json
+
+###
+
+### Invalid query: startDate must not be after endDate
+GET {{host}}/expenses?startDate=2026-03-31&endDate=2026-03-01
+Accept: application/json
+
+###
+
+### Invalid query: sortOrder requires sortBy
+GET {{host}}/expenses?sortOrder=desc
+Accept: application/json
+
+###
+
+### Invalid query: sortBy must be either date or amount
+GET {{host}}/expenses?sortBy=category
+Accept: application/json
+
+###
+
+### Invalid query: sortOrder must be either asc or desc
+GET {{host}}/expenses?sortBy=amount&sortOrder=down
+Accept: application/json
+
+###
+
 ### Invalid summary input: negative year
 GET {{host}}/expenses/summary?year=-1&month=3
 Accept: application/json
@@ -206,25 +277,3 @@ Accept: application/json
 ### Invalid summary input: month = 13
 GET {{host}}/expenses/summary?year=2026&month=13
 Accept: application/json
-
-
-### Filter by category and sort by amount ascending
-GET {{host}}/expenses?category=Food&sortBy=amount
-
-### Filter by category and sort by amount descending
-GET {{host}}/expenses?category=Food&sortBy=amount&sortOrder=desc
-
-### Filter by date interval and sort by date ascending
-GET {{host}}/expenses?startDate=2026-03-01&endDate=2026-03-31&sortBy=date
-
-### Filter by date interval and sort by date descending
-GET {{host}}/expenses?startDate=2026-03-01&endDate=2026-03-31&sortBy=date&sortOrder=desc
-
-### Filter by category and date interval, then sort by amount descending
-GET {{host}}/expenses?category=Groceries&startDate=2026-03-01&endDate=2026-03-31&sortBy=amount&sortOrder=desc
-
-### Filter by category and start date only, then sort by date
-GET {{host}}/expenses?category=Transport&startDate=2026-03-01&sortBy=date
-
-### Filter by category and end date only, then sort by amount
-GET {{host}}/expenses?category=Bills&endDate=2026-03-31&sortBy=amount
